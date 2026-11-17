@@ -417,7 +417,7 @@ private fun TonyApp() {
                             refreshKey++
                         }, refreshKey
                     )
-                    Tab.HISTORY -> HistoryScreen(paper.history(), prices) { id, price ->
+                    Tab.HISTORY -> HistoryScreen(paper.history().filter { it.status == TradeStatus.CLOSED }, prices) { id, price ->
                         val startedAt = android.os.SystemClock.elapsedRealtime()
                         message = paper.close(id, price)
                         val processingMs = android.os.SystemClock.elapsedRealtime() - startedAt
