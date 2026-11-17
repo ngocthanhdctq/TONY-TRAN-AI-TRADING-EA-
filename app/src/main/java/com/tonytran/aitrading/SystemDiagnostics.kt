@@ -201,10 +201,14 @@ object SystemDiagnostics {
         )
         val intelligence = MarketIntelligenceEngine.analyze(marketIntelligenceCoins, null)
         
+        
         check(
             "AI Market Intelligence chặn ATR% cao",
             sol?.reasons?.joinToString() ?: "Không có kết quả SOLUSDT",
-            sol?.decision == "WAIT" && sol.reasons.any { it.contains("ATR% cao") }
+            sol?.let {
+                it.decision == "WAIT" &&
+                    it.reasons.any { reason -> reason.contains("ATR% cao") }
+            } == true
         )
 
         check(
@@ -228,6 +232,10 @@ object SystemDiagnostics {
         check(
             "WAIT được đánh giá riêng, không tính là lệnh thắng",
             "WAIT +0.60% => AVOIDED_MOVE; +0.10% => FLAT",
+            PredictionOutcomeEvaluator.evaluate("WAIT", 0.60) == PredictionStatus.AVOIDED_MOVE &&
+                PredictionOutcomeEvaluator.evaluate("WAIT", 0.10) == PredictionStatus.FLAT
+        )
+
             PredictionOutcomeEvaluator.evaluate("WAIT", 0.60) == PredictionStatus.AVOIDED_MOVE &&
                 PredictionOutcomeEvaluator.evaluate("WAIT", 0.10) == PredictionStatus.FLAT
         )
