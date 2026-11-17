@@ -401,6 +401,20 @@ private fun TonyApp() {
                         coins, selectedSymbol, { selectedSymbol = it }, spotAmount,
                         { spotAmount = it }, futuresMargin, { futuresMargin = it },
                         side, { side = it }, paper,
+                        openTrades = paper.openTrades(),
+                        prices = prices,
+                        onClose = { id, price ->
+                            val startedAt = android.os.SystemClock.elapsedRealtime()
+                            message = paper.close(id, price)
+                            val processingMs = android.os.SystemClock.elapsedRealtime() - startedAt
+                            recordEvent(TradingEventType.SYSTEM, "Thời gian xử lý đóng PAPER",
+                                "Thời gian xử lý nội bộ: ${processingMs} ms. Không có lệnh gửi hoặc xác nhận khớp từ Binance.",
+                                tradeId = id, source = "LOCAL_PAPER_ENGINE", status = "PROCESSED", latencyMs = processingMs)
+                            dispatchTradeNotifications()
+                            if (context.getSharedPreferences("tony_background_monitor", android.content.Context.MODE_PRIVATE)
+                                    .getBoolean("enabled_by_user", false)) syncBackgroundMonitor()
+                            refreshKey++
+                        },
                         onTrade = { text ->
                             val startedAt = android.os.SystemClock.elapsedRealtime()
                             val c = coins.firstOrNull { it.symbol == selectedSymbol }
@@ -936,10 +950,43 @@ private fun TradeScreen(
     spotAmount: String, onSpotAmount: (String) -> Unit,
     margin: String, onMargin: (String) -> Unit,
     side: Side, onSide: (Side) -> Unit,
-    paper: PaperTradingEngine, onTrade: (String) -> Unit, key: Int
+    paper: PaperTradingEngine,
+    openTrades: List<PaperTrade>,
+    prices: Map<String, Double>,
+    onClose: (Long, Double) -> Unit,
+    onTrade: (String) -> Unit, key: Int
 ) {
     val coin = coins.firstOrNull { it.symbol == selected }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("LỆNH PAPER ĐANG MỞ (${openTrades.size})", style = MaterialTheme.typography.titleLarge)
+        if (openTrades.isEmpty()) {
+            Text("Chưa có lệnh PAPER đang mở.")
+        } else {
+            openTrades.forEach { trade ->
+                val currentPrice = prices[trade.symbol]
+                ElevatedCard(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text("${trade.symbol} • ${trade.market} • ${trade.side}",
+                            style = MaterialTheme.typography.titleMedium)
+                        Text("Giá vào: ${trade.entry}")
+                        Text("Giá hiện tại: ${currentPrice?.toString() ?: "Chưa có dữ liệu"}")
+                        Text("PnL mô phỏng: %.5f USDT".format(java.util.Locale.US, trade.pnl),
+                            color = if (trade.pnl >= 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                        Text("Khối lượng: ${trade.quantity} • Margin: ${trade.margin} USDT",
+                            style = MaterialTheme.typography.bodySmall)
+                        Button(
+                            onClick = { currentPrice?.let { onClose(trade.id, it) } },
+                            enabled = currentPrice != null,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text("ĐÓNG LỆNH PAPER")
+                        }
+                    }
+                }
+            }
+        }
+        HorizontalDivider()
         Text("Đặt lệnh giả lập", style = MaterialTheme.typography.titleLarge)
         OutlinedTextField(selected, { onSelected(it.uppercase()) }, label = { Text("Cặp USDT") }, modifier = Modifier.fillMaxWidth())
         Text("Giá hiện tại: ${coin?.price ?: "đang chờ dữ liệu"}")
