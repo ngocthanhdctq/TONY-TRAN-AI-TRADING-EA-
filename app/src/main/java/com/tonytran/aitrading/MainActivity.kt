@@ -37,8 +37,35 @@ class MainActivity : ComponentActivity() {
 }
 
 private enum class Tab(val label: String) {
-    DASHBOARD("AI TRADING"), SCANNER("AI Scanner"), TRADE("Giao dịch"),
-    HISTORY("Lịch sử"), FUNDING("Funding Hunter"), NEWS("Tin tức"), FUSION("AI Fusion"), BACKTEST("Backtest"), EVENTS("Sự kiện"), DIAGNOSTICS("Kiểm thử hệ thống"), BINANCE("Binance Read-only"), INTELLIGENCE("AI Market Intelligence"), LEARNING("AI SELF-LEARNING"), SETTINGS("Cài đặt")
+    DASHBOARD("Tổng quan"), SCANNER("Scanner"), TRADE("Giao dịch"),
+    HISTORY("Lịch sử"), FUNDING("Funding Hunter"), NEWS("Tin tức"), FUSION("AI Fusion"),
+    BACKTEST("Backtest"), EVENTS("Sự kiện"), DIAGNOSTICS("Chẩn đoán"),
+    BINANCE("Binance Read-only"), INTELLIGENCE("AI Market Intelligence"),
+    LEARNING("AI Self-Learning"), SETTINGS("Cài đặt")
+}
+
+private enum class PrimarySection(val title: String, val icon: String, val defaultTab: Tab) {
+    OVERVIEW("Tổng quan", "⌂", Tab.DASHBOARD),
+    MARKETS("Thị trường", "⌕", Tab.SCANNER),
+    TRADING("Giao dịch", "⇄", Tab.TRADE),
+    AI("AI Center", "✦", Tab.NEWS),
+    TOOLS("Công cụ", "⚙", Tab.BACKTEST)
+}
+
+private fun tabsFor(section: PrimarySection): List<Tab> = when (section) {
+    PrimarySection.OVERVIEW -> listOf(Tab.DASHBOARD)
+    PrimarySection.MARKETS -> listOf(Tab.SCANNER, Tab.INTELLIGENCE, Tab.FUNDING)
+    PrimarySection.TRADING -> listOf(Tab.TRADE, Tab.HISTORY)
+    PrimarySection.AI -> listOf(Tab.NEWS, Tab.FUSION, Tab.EVENTS, Tab.LEARNING)
+    PrimarySection.TOOLS -> listOf(Tab.BACKTEST, Tab.DIAGNOSTICS, Tab.BINANCE, Tab.SETTINGS)
+}
+
+private fun sectionFor(tab: Tab): PrimarySection = when (tab) {
+    Tab.DASHBOARD -> PrimarySection.OVERVIEW
+    Tab.SCANNER, Tab.INTELLIGENCE, Tab.FUNDING -> PrimarySection.MARKETS
+    Tab.TRADE, Tab.HISTORY -> PrimarySection.TRADING
+    Tab.NEWS, Tab.FUSION, Tab.EVENTS, Tab.LEARNING -> PrimarySection.AI
+    Tab.BACKTEST, Tab.DIAGNOSTICS, Tab.BINANCE, Tab.SETTINGS -> PrimarySection.TOOLS
 }
 
 @Composable
@@ -316,18 +343,14 @@ private fun TonyApp() {
             },
             bottomBar = {
                 NavigationBar {
-                    NavigationBarItem(
-                        selected = tab != Tab.LEARNING,
-                        onClick = { if (tab == Tab.LEARNING) tab = Tab.DASHBOARD },
-                        icon = { Text("✦") },
-                        label = { Text("AI TRADING") }
-                    )
-                    NavigationBarItem(
-                        selected = tab == Tab.LEARNING,
-                        onClick = { tab = Tab.LEARNING },
-                        icon = { Text("AI") },
-                        label = { Text("AI SELF-LEARNING") }
-                    )
+                    PrimarySection.values().forEach { section ->
+                        NavigationBarItem(
+                            selected = sectionFor(tab) == section,
+                            onClick = { tab = section.defaultTab },
+                            icon = { Text(section.icon) },
+                            label = { Text(section.title, maxLines = 1) }
+                        )
+                    }
                 }
             }
         ) { padding ->
@@ -377,19 +400,16 @@ private fun TonyApp() {
                         )
                     }
                 } else {
+                    val activeSection = sectionFor(tab)
                     Row(
                         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(7.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        listOf(Tab.DASHBOARD, Tab.SCANNER, Tab.TRADE, Tab.HISTORY, Tab.FUNDING, Tab.NEWS, Tab.FUSION, Tab.BACKTEST, Tab.EVENTS, Tab.DIAGNOSTICS, Tab.BINANCE, Tab.INTELLIGENCE, Tab.SETTINGS).forEach { section ->
+                        tabsFor(activeSection).forEach { sectionTab ->
                             FilterChip(
-                                selected = tab == section,
-                                onClick = { tab = section },
-                                label = { Text(when(section) {
-                                    Tab.DASHBOARD -> "Tổng quan"; Tab.SCANNER -> "Scanner"; Tab.TRADE -> "Lệnh"
-                                    Tab.HISTORY -> "Lịch sử"; Tab.FUNDING -> "Funding"; Tab.NEWS -> "Tin tức"
-                                    Tab.FUSION -> "Fusion"; Tab.BACKTEST -> "Kiểm thử"; Tab.EVENTS -> "Sự kiện"; Tab.DIAGNOSTICS -> "Kiểm thử"; Tab.BINANCE -> "Binance"; Tab.INTELLIGENCE -> "AI Market"; else -> "Cài đặt"
-                                }) }
+                                selected = tab == sectionTab,
+                                onClick = { tab = sectionTab },
+                                label = { Text(sectionTab.label, maxLines = 1) }
                             )
                         }
                     }
