@@ -1,3 +1,4 @@
+
 package com.tonytran.aitrading
 
 import androidx.compose.foundation.layout.Arrangement
@@ -183,9 +184,9 @@ object SystemDiagnostics {
         val emptyAssessment = BinanceAccountAdvisor.assess(emptyAccount, emptyList())
         check(
             "AI Advisor WAIT khi không có vị thế",
+            emptyAssessment.advice.joinToString { it.title },
             emptyAssessment.advice.any { it.title.contains("Không có vị thế") } &&
-                emptyAssessment.advice.any { it.action.startsWith("WAIT") },
-            emptyAssessment.advice.joinToString { it.title }
+                emptyAssessment.advice.any { it.action.startsWith("WAIT") }
         )
 
         val marketIntelligenceCoins = listOf(
@@ -201,10 +202,10 @@ object SystemDiagnostics {
         val intelligence = MarketIntelligenceEngine.analyze(marketIntelligenceCoins, null)
         check(
             "AI Market Intelligence ưu tiên WAIT khi thiếu Funding",
+            "Số cặp ${intelligence.items.size} • BTC ${intelligence.btcChangePct}",
             intelligence.items.isNotEmpty() &&
                 intelligence.items.all { it.decision == "WAIT" } &&
-                intelligence.btcChangePct == 2.0,
-            "Số cặp ${intelligence.items.size} • BTC ${intelligence.btcChangePct}"
+                intelligence.btcChangePct == 2.0
         )
 
         val volatileCoin = MarketCoin(
@@ -215,8 +216,7 @@ object SystemDiagnostics {
             listOf(marketIntelligenceCoins.first(), volatileCoin), null
         )
         val sol = volatileReport.items.firstOrNull { it.symbol == "SOLUSDT" }
-        
-                check(
+        check(
             "AI Market Intelligence chặn ATR% cao",
             sol?.reasons?.joinToString() ?: "Không có kết quả SOLUSDT",
             sol?.decision == "WAIT" && sol.reasons.any { it.contains("ATR% cao") }
@@ -284,8 +284,10 @@ fun SystemDiagnosticsScreen() {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text(item.name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                            Text(if (item.passed) "ĐẠT" else "LỖI",
-                                color = if (item.passed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
+                            Text(
+                                if (item.passed) "ĐẠT" else "LỖI",
+                                color = if (item.passed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                            )
                         }
                         Text(item.detail, style = MaterialTheme.typography.bodySmall)
                     }
