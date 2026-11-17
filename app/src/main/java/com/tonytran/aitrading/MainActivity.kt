@@ -965,22 +965,72 @@ FilterChip(side == Side.SHORT, { onSide(Side.SHORT) }, label = { Text("SHORT") }
 }
 
 @Composable
-private fun HistoryScreen(trades: List<PaperTrade>, prices: Map<String, Double>, onClose: (Long, Double) -> Unit) {
+
+@Composable
+private fun HistoryScreen(
+    trades: List<PaperTrade>,
+    prices: Map<String, Double>,
+    onClose: (Long, Double) -> Unit
+) {
     LazyColumn {
-        items(trades.asReversed(), key = { it.id }) { t ->
+        if (trades.isEmpty()) {
+            item {
+                Text(
+                    "Chưa có giao dịch nào được đóng.",
+                    modifier = Modifier.padding(20.dp),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+
+        items(trades.filter { it.status == TradeStatus.CLOSED }
+            .sortedByDescending { it.closedAt ?: it.openedAt },
+            key = { it.id }
+        ) { t ->
+
+            val openedTime = java.text.SimpleDateFormat(
+                "dd/MM/yyyy HH:mm:ss",
+                java.util.Locale.getDefault()
+            ).format(java.util.Date(t.openedAt))
+
+            val closedTime = t.closedAt?.let {
+                java.text.SimpleDateFormat(
+                    "dd/MM/yyyy HH:mm:ss",
+                    java.util.Locale.getDefault()
+                ).format(java.util.Date(it))
+            } ?: "Không có dữ liệu"
+
+            val pnlText = (if (t.pnl > 0) "+" else "") +
+                "%.4f".format(java.util.Locale.US, t.pnl)
+
             ListItem(
-                headlineContent = { Text("#${t.id} ${t.symbol} • ${t.market} • ${t.side}") },
-                supportingContent = {
-                    Text("Entry ${t.entry} • ${t.status} • PnL ${"%.4f".format(t.pnl)} USDT")
+                headlineContent = {
+                    Text("${t.symbol} • ${t.market} • ${t.side}")
                 },
-                trailingContent = {
-                    if (t.status == TradeStatus.OPEN) {
-                        TextButton(onClick = { prices[t.symbol]?.let { onClose(t.id, it) } },
-                            enabled = prices.containsKey(t.symbol)) { Text("Đóng") }
+                supportingContent = {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text("Giá vào: ${t.entry}")
+                        Text("Giá đóng: ${t.exit ?: "Không có dữ liệu"}")
+                        Text("PnL: $pnlText USDT")
+                        Text("Phí: %.6f USDT".format(
+                            java.util.Locale.US, t.fees
+                        ))
+                        Text("Thời gian mở: $openedTime")
+                        Text("Thời gian đóng: $closedTime")
+                        if (t.note.isNotBlank()) {
+                            Text("Ghi chú: ${t.note}")
+                        }
+                        Text("TRẠNG THÁI: ĐÃ ĐÓNG")
                     }
                 }
             )
             HorizontalDivider()
+        }
+    }
+}
+
         }
     }
 }
