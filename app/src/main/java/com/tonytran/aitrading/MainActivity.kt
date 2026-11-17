@@ -964,15 +964,34 @@ private fun TradeScreen(
         } else {
             openTrades.forEach { trade ->
                 val currentPrice = prices[trade.symbol]
+                // Keep the live estimate consistent with PaperTradingEngine.close().
+                val estimatedNetPnl = currentPrice?.let { price ->
+                    val gross = when (trade.market) {
+                        MarketType.SPOT -> (price - trade.entry) * trade.quantity
+                        MarketType.FUTURES -> {
+                            val move = (price - trade.entry) * trade.quantity
+                            if (trade.side == Side.SHORT) -move else move
+                        }
+                    }
+                    val feeRate = if (trade.market == MarketType.SPOT) 0.001 else 0.0005
+                    val estimatedExitFee = price * trade.quantity * feeRate
+                    gross - estimatedExitFee - trade.fees
+                }
                 ElevatedCard(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text("${trade.symbol} • ${trade.market} • ${trade.side}",
                             style = MaterialTheme.typography.titleMedium)
                         Text("Giá vào: ${trade.entry}")
                         Text("Giá hiện tại: ${currentPrice?.toString() ?: "Chưa có dữ liệu"}")
-                        Text("PnL mô phỏng: %.5f USDT".format(java.util.Locale.US, trade.pnl),
-                            color = if (trade.pnl >= 0.0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error)
-                        Text("Khối lượng: ${trade.quantity} • Margin: ${trade.margin} USDT",
+                        Text(
+                            "PnL tạm tính (đã trừ phí): " + (estimatedNetPnl?.let {
+                                "%.5f USDT".format(java.util.Locale.US, it)
+                            } ?: "Chưa có giá"),
+                            color = if ((estimatedNetPnl ?: 0.0) >= 0.0)
+                                MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        )
+                        val quantityText = java.text.DecimalFormat("0.##########").format(trade.quantity)
+                        Text("Khối lượng: $quantityText • Margin: %.4f USDT".format(java.util.Locale.US, trade.margin),
                             style = MaterialTheme.typography.bodySmall)
                         Button(
                             onClick = { currentPrice?.let { onClose(trade.id, it) } },
