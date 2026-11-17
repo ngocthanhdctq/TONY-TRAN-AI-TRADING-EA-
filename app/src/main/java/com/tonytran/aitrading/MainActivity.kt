@@ -1297,9 +1297,7 @@ private fun NewsScreen(
                     }
                 }
             }
-        }
-    }
-}
+        
 
 
 @Composable
