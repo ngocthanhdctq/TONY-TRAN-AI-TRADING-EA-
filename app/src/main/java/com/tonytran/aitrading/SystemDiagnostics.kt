@@ -216,7 +216,7 @@ object SystemDiagnostics {
         )
         val sol = volatileReport.items.firstOrNull { it.symbol == "SOLUSDT" }
         
-        check(
+                check(
             "AI Market Intelligence chặn ATR% cao",
             sol?.reasons?.joinToString() ?: "Không có kết quả SOLUSDT",
             sol?.decision == "WAIT" && sol.reasons.any { it.contains("ATR% cao") }
@@ -242,29 +242,6 @@ object SystemDiagnostics {
             "WAIT +0.60% => AVOIDED_MOVE; +0.10% => FLAT",
             PredictionOutcomeEvaluator.evaluate("WAIT", 0.60) == PredictionStatus.AVOIDED_MOVE &&
                 PredictionOutcomeEvaluator.evaluate("WAIT", 0.10) == PredictionStatus.FLAT
-        )
-
-
-        check(
-            "Signal Learning LONG đúng khi giá tăng đủ ngưỡng",
-            PredictionOutcomeEvaluator.evaluate("LONG", 0.20) == PredictionStatus.CORRECT,
-            "LONG +0.20% phải được đánh dấu CORRECT"
-        )
-        check(
-            "Signal Learning SHORT đúng khi giá giảm đủ ngưỡng",
-            PredictionOutcomeEvaluator.evaluate("SHORT", -0.20) == PredictionStatus.CORRECT,
-            "SHORT -0.20% phải được đánh dấu CORRECT"
-        )
-        check(
-            "Signal Learning không chấm vùng nhiễu là thắng/thua",
-            PredictionOutcomeEvaluator.evaluate("LONG", 0.05) == PredictionStatus.FLAT,
-            "Biến động +0.05% phải là FLAT"
-        )
-        check(
-            "WAIT được đánh giá riêng, không tính là lệnh thắng",
-            PredictionOutcomeEvaluator.evaluate("WAIT", 0.60) == PredictionStatus.AVOIDED_MOVE &&
-                PredictionOutcomeEvaluator.evaluate("WAIT", 0.10) == PredictionStatus.FLAT,
-            "WAIT +0.60% => AVOIDED_MOVE; +0.10% => FLAT"
         )
 
         return results
