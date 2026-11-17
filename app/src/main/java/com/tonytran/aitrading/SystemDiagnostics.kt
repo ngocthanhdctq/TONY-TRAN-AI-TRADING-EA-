@@ -215,11 +215,35 @@ object SystemDiagnostics {
             listOf(marketIntelligenceCoins.first(), volatileCoin), null
         )
         val sol = volatileReport.items.firstOrNull { it.symbol == "SOLUSDT" }
+        
         check(
             "AI Market Intelligence chặn ATR% cao",
-            sol?.decision == "WAIT" && sol.reasons.any { it.contains("ATR% cao") },
-            sol?.reasons?.joinToString() ?: "Không có kết quả SOLUSDT"
+            sol?.reasons?.joinToString() ?: "Không có kết quả SOLUSDT",
+            sol?.decision == "WAIT" && sol.reasons.any { it.contains("ATR% cao") }
         )
+
+        check(
+            "Signal Learning LONG đúng khi giá tăng đủ ngưỡng",
+            "LONG +0.20% phải được đánh dấu CORRECT",
+            PredictionOutcomeEvaluator.evaluate("LONG", 0.20) == PredictionStatus.CORRECT
+        )
+        check(
+            "Signal Learning SHORT đúng khi giá giảm đủ ngưỡng",
+            "SHORT -0.20% phải được đánh dấu CORRECT",
+            PredictionOutcomeEvaluator.evaluate("SHORT", -0.20) == PredictionStatus.CORRECT
+        )
+        check(
+            "Signal Learning không chấm vùng nhiễu là thắng/thua",
+            "Biến động +0.05% phải là FLAT",
+            PredictionOutcomeEvaluator.evaluate("LONG", 0.05) == PredictionStatus.FLAT
+        )
+        check(
+            "WAIT được đánh giá riêng, không tính là lệnh thắng",
+            "WAIT +0.60% => AVOIDED_MOVE; +0.10% => FLAT",
+            PredictionOutcomeEvaluator.evaluate("WAIT", 0.60) == PredictionStatus.AVOIDED_MOVE &&
+                PredictionOutcomeEvaluator.evaluate("WAIT", 0.10) == PredictionStatus.FLAT
+        )
+
 
         check(
             "Signal Learning LONG đúng khi giá tăng đủ ngưỡng",
