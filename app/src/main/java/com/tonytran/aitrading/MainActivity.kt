@@ -27,6 +27,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.coroutineScope
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +39,7 @@ class MainActivity : ComponentActivity() {
 
 private enum class Tab(val label: String) {
     DASHBOARD("Tổng quan"), SCANNER("Scanner"), TRADE("Giao dịch"),
-    HISTORY("Lịch sử"), FUNDING("Funding Hunter"), NEWS("Tin tức"), FUSION("AI Fusion"),
+    HISTORY("Lịch sử"), FUNDING("Funding Hunter"), NEWS("Tin tức"), ASSISTANT("AI Assistant"), FUSION("AI Fusion"),
     BACKTEST("Backtest"), EVENTS("Sự kiện"), DIAGNOSTICS("Chẩn đoán"),
     BINANCE("Binance Read-only"), INTELLIGENCE("AI Market Intelligence"),
     LEARNING("AI Self-Learning"), SETTINGS("Cài đặt")
@@ -56,7 +57,7 @@ private fun tabsFor(section: PrimarySection): List<Tab> = when (section) {
     PrimarySection.OVERVIEW -> listOf(Tab.DASHBOARD)
     PrimarySection.MARKETS -> listOf(Tab.SCANNER, Tab.INTELLIGENCE, Tab.FUNDING)
     PrimarySection.TRADING -> listOf(Tab.TRADE, Tab.HISTORY)
-    PrimarySection.AI -> listOf(Tab.NEWS, Tab.FUSION, Tab.EVENTS, Tab.LEARNING)
+    PrimarySection.AI -> listOf(Tab.ASSISTANT, Tab.NEWS, Tab.FUSION, Tab.EVENTS, Tab.LEARNING)
     PrimarySection.TOOLS -> listOf(Tab.BACKTEST, Tab.DIAGNOSTICS, Tab.BINANCE, Tab.SETTINGS)
 }
 
@@ -64,7 +65,7 @@ private fun sectionFor(tab: Tab): PrimarySection = when (tab) {
     Tab.DASHBOARD -> PrimarySection.OVERVIEW
     Tab.SCANNER, Tab.INTELLIGENCE, Tab.FUNDING -> PrimarySection.MARKETS
     Tab.TRADE, Tab.HISTORY -> PrimarySection.TRADING
-    Tab.NEWS, Tab.FUSION, Tab.EVENTS, Tab.LEARNING -> PrimarySection.AI
+    Tab.NEWS, Tab.ASSISTANT, Tab.FUSION, Tab.EVENTS, Tab.LEARNING -> PrimarySection.AI
     Tab.BACKTEST, Tab.DIAGNOSTICS, Tab.BINANCE, Tab.SETTINGS -> PrimarySection.TOOLS
 }
 
@@ -479,6 +480,25 @@ private fun TonyApp() {
                         status = fundingStatus,
                         busy = fundingBusy,
                         onScan = { refreshFunding() }
+                    )
+                    Tab.ASSISTANT -> MarketAssistantScreen(
+                        coins = coins,
+                        onPick = { selectedSymbol = it; tab = Tab.TRADE },
+                        onAnalyze = { symbol ->
+                            val ticker = coins.firstOrNull { it.symbol.equals(symbol, true) }
+                                ?: market.fetchTickers().firstOrNull { it.symbol.equals(symbol, true) }
+                            if (ticker == null) null else {
+                                val candleSets = coroutineScope {
+                                    listOf("5m", "15m", "1h", "4h").map { interval ->
+                                        async { market.fetchKlines(symbol, interval, 120) }
+                                    }.awaitAll()
+                                }
+                                MarketAssistantAnalysis.analyze(
+                                    ticker,
+                                    candleSets[0], candleSets[1], candleSets[2], candleSets[3]
+                                )
+                            }
+                        }
                     )
                     Tab.NEWS -> NewsScreen(
                         digest = newsDigest,
