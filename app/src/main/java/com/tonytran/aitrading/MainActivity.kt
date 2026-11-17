@@ -337,24 +337,47 @@ private fun TonyApp() {
     MaterialTheme(colorScheme = darkColorScheme()) {
         Scaffold(
             topBar = {
-                TopAppBarCompat(
-                    title = "TONY TRAN AI TRADING EA",
-                    subtitle = "PAPER TRADING • LIVE MARKET DATA"
-                )
+                if (tab != Tab.ASSISTANT) {
+                    TopAppBarCompat(
+                        title = "TONY TRAN AI TRADING EA",
+                        subtitle = "PAPER TRADING • LIVE MARKET DATA"
+                    )
+                }
             },
             bottomBar = {
-                NavigationBar {
-                    PrimarySection.values().forEach { section ->
-                        NavigationBarItem(
-                            selected = sectionFor(tab) == section,
-                            onClick = { tab = section.defaultTab },
-                            icon = { Text(section.icon) },
-                            label = { Text(section.title, maxLines = 1) }
-                        )
+                if (tab != Tab.ASSISTANT) {
+                    NavigationBar {
+                        PrimarySection.values().forEach { section ->
+                            NavigationBarItem(
+                                selected = sectionFor(tab) == section,
+                                onClick = { tab = section.defaultTab },
+                                icon = { Text(section.icon) },
+                                label = { Text(section.title, maxLines = 1) }
+                            )
+                        }
                     }
                 }
             }
         ) { padding ->
+            if (tab == Tab.ASSISTANT) {
+                MarketAssistantScreen(
+                    coins = coins,
+                    onPick = { selectedSymbol = it; tab = Tab.TRADE },
+                    onBack = { tab = Tab.NEWS },
+                    onAnalyze = { symbol ->
+                        val ticker = coins.firstOrNull { it.symbol.equals(symbol, true) }
+                            ?: market.fetchTickers().firstOrNull { it.symbol.equals(symbol, true) }
+                        if (ticker == null) null else {
+                            val candleSets = coroutineScope {
+                                listOf("5m", "15m", "1h", "4h").map { interval ->
+                                    async { market.fetchKlines(symbol, interval, 120) }
+                                }.awaitAll()
+                            }
+                            MarketAssistantAnalysis.analyze(ticker, candleSets[0], candleSets[1], candleSets[2], candleSets[3])
+                        }
+                    }
+                )
+            } else {
             Column(Modifier.padding(padding).fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     AssistChip(
@@ -417,6 +440,7 @@ private fun TonyApp() {
                 }
                 Spacer(Modifier.height(8.dp))
                 when (tab) {
+                    Tab.ASSISTANT -> Unit // Rendered as a dedicated full-screen chat above.
                     Tab.DASHBOARD -> DashboardScreen(paper, coins, prices, refreshKey)
                     Tab.SCANNER -> ScannerScreen(coins, onPick = { selectedSymbol = it; tab = Tab.TRADE })
                     Tab.TRADE -> TradeScreen(
@@ -480,25 +504,6 @@ private fun TonyApp() {
                         status = fundingStatus,
                         busy = fundingBusy,
                         onScan = { refreshFunding() }
-                    )
-                    Tab.ASSISTANT -> MarketAssistantScreen(
-                        coins = coins,
-                        onPick = { selectedSymbol = it; tab = Tab.TRADE },
-                        onAnalyze = { symbol ->
-                            val ticker = coins.firstOrNull { it.symbol.equals(symbol, true) }
-                                ?: market.fetchTickers().firstOrNull { it.symbol.equals(symbol, true) }
-                            if (ticker == null) null else {
-                                val candleSets = coroutineScope {
-                                    listOf("5m", "15m", "1h", "4h").map { interval ->
-                                        async { market.fetchKlines(symbol, interval, 120) }
-                                    }.awaitAll()
-                                }
-                                MarketAssistantAnalysis.analyze(
-                                    ticker,
-                                    candleSets[0], candleSets[1], candleSets[2], candleSets[3]
-                                )
-                            }
-                        }
                     )
                     Tab.NEWS -> NewsScreen(
                         digest = newsDigest,
@@ -634,6 +639,7 @@ private fun TonyApp() {
                         }
                     )
                 }
+            }
             }
         }
     }
