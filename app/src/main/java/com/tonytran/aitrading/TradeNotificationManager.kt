@@ -1,3 +1,4 @@
+
 package com.tonytran.aitrading
 
 import android.app.NotificationChannel
@@ -72,7 +73,7 @@ class TradeNotificationManager(private val context: Context) {
                 .setContentText(lines.take(3).joinToString(" • "))
                 .setStyle(android.app.Notification.BigTextStyle().bigText(text))
                 .setAutoCancel(true)
-                .setCategory(android.app.Notification.CATEGORY_ERROR)
+                .setCategory(android.app.Notification.CATEGORY_STATUS)
                 .build()
         } else {
             @Suppress("DEPRECATION")
@@ -86,7 +87,6 @@ class TradeNotificationManager(private val context: Context) {
         }
         runCatching { manager.notify((t.id * 10 + if (isOpen) 1 else 2).toInt(), notification) }
     }
-
 
     fun showRisk(event: TradeRiskEvent) {
         val t = event.trade
@@ -132,7 +132,7 @@ class TradeNotificationManager(private val context: Context) {
             detail,
             "Thời gian: $time",
             "PAPER TRADING • Không phải lệnh tiền thật"
-        ).joinToString("\\n")
+        ).joinToString("\n")
         val idSuffix = event.riskType.hashCode() and 0x7fffffff
         val notificationId = ((t.id * 1000L + (idSuffix % 997)) % Int.MAX_VALUE).toInt()
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -142,7 +142,7 @@ class TradeNotificationManager(private val context: Context) {
                 .setContentText(detail)
                 .setStyle(android.app.Notification.BigTextStyle().bigText(body))
                 .setAutoCancel(true)
-                .setCategory(android.app.Notification.CATEGORY_WARNING)
+                .setCategory(android.app.Notification.CATEGORY_ERROR)
                 .build()
         } else {
             @Suppress("DEPRECATION")
@@ -156,5 +156,7 @@ class TradeNotificationManager(private val context: Context) {
         }
         runCatching { manager.notify(notificationId, notification) }
     }
-    private fun fmt(value: Double): String = String.format(Locale.US, "%.8f", value)
+
+    private fun fmt(value: Double): String =
+        String.format(Locale.US, "%.8f", value)
 }
