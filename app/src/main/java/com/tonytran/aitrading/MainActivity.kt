@@ -1028,7 +1028,9 @@ private fun HistoryScreen(
         }
     }
 }
-
+}
+}
+                         }
 
 @Composable
 private fun SettingsScreen(
