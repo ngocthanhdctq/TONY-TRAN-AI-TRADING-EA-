@@ -83,5 +83,25 @@ class BinancePublicMarket {
         "4h" -> 4 * 60 * 60_000L
         else -> error("Unsupported interval: $interval")
     }
+    suspend fun fetchKlines(
+    symbol: String,
+    interval: String,
+    limit: Int = 120
+): List<Candle> {
+    require(limit in 60..1000) {
+        "Số lượng nến phải từ 60 đến 1000"
+    }
+
+    val endTime = System.currentTimeMillis()
+    val startTime = endTime - intervalMillis(interval) * limit
+
+    return fetchHistoricalKlines(
+        symbol = symbol,
+        interval = interval,
+        startTime = startTime,
+        endTime = endTime,
+        maxCandles = limit
+    )
+    }
 
 }
