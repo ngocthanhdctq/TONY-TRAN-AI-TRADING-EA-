@@ -965,8 +965,6 @@ FilterChip(side == Side.SHORT, { onSide(Side.SHORT) }, label = { Text("SHORT") }
 }
 
 @Composable
-
-@Composable
 private fun HistoryScreen(
     trades: List<PaperTrade>,
     prices: Map<String, Double>,
