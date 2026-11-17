@@ -268,6 +268,7 @@ object SystemDiagnostics {
             PredictionOutcomeEvaluator.evaluate("WAIT", 0.60) == PredictionStatus.AVOIDED_MOVE &&
                 PredictionOutcomeEvaluator.evaluate("WAIT", 0.10) == PredictionStatus.FLAT
         )
+                return results
 
     }
 }
