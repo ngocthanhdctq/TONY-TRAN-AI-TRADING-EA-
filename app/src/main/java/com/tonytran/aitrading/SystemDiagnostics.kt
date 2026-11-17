@@ -189,19 +189,52 @@ object SystemDiagnostics {
                 emptyAssessment.advice.any { it.action.startsWith("WAIT") }
         )
 
+        
         val marketIntelligenceCoins = listOf(
             MarketCoin(
-                symbol = "BTCUSDT", price = 60000.0, changePct = 2.0, quoteVolume = 1_000_000_000.0,
-                score = 85, signal = "LONG", atrPct = 1.2, volumeRatio = 1.8, trend1h = "BULLISH"
+                symbol = "BTCUSDT",
+                price = 50000.0,
+                changePct = 2.0,
+                quoteVolume = 1_000_000_000.0,
+                score = 85,
+                signal = "LONG",
+                atrPct = 1.2,
+                volumeRatio = 1.8,
+                trend1h = "BULLISH"
             ),
             MarketCoin(
-                symbol = "ETHUSDT", price = 3000.0, changePct = 1.0, quoteVolume = 500_000_000.0,
-                score = 82, signal = "LONG", atrPct = 1.0, volumeRatio = 1.5, trend1h = "BULLISH"
+                symbol = "ETHUSDT",
+                price = 3000.0,
+                changePct = 1.0,
+                quoteVolume = 500_000_000.0,
+                score = 82,
+                signal = "LONG",
+                atrPct = 1.0,
+                volumeRatio = 1.5,
+                trend1h = "BULLISH"
+            ),
+            MarketCoin(
+                symbol = "SOLUSDT",
+                price = 100.0,
+                changePct = 5.0,
+                quoteVolume = 100_000_000.0,
+                score = 95,
+                signal = "LONG",
+                atrPct = 4.0,
+                volumeRatio = 2.0,
+                trend1h = "BULLISH"
             )
         )
-        val intelligence = MarketIntelligenceEngine.analyze(marketIntelligenceCoins, null)
-        
-        
+
+        val intelligence = MarketIntelligenceEngine.analyze(
+            marketIntelligenceCoins,
+            null
+        )
+
+        val sol = intelligence.items.firstOrNull {
+            it.symbol == "SOLUSDT"
+        }
+
         check(
             "AI Market Intelligence chặn ATR% cao",
             sol?.reasons?.joinToString() ?: "Không có kết quả SOLUSDT",
@@ -232,10 +265,6 @@ object SystemDiagnostics {
         check(
             "WAIT được đánh giá riêng, không tính là lệnh thắng",
             "WAIT +0.60% => AVOIDED_MOVE; +0.10% => FLAT",
-            PredictionOutcomeEvaluator.evaluate("WAIT", 0.60) == PredictionStatus.AVOIDED_MOVE &&
-                PredictionOutcomeEvaluator.evaluate("WAIT", 0.10) == PredictionStatus.FLAT
-        )
-
             PredictionOutcomeEvaluator.evaluate("WAIT", 0.60) == PredictionStatus.AVOIDED_MOVE &&
                 PredictionOutcomeEvaluator.evaluate("WAIT", 0.10) == PredictionStatus.FLAT
         )
