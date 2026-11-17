@@ -971,7 +971,7 @@ private fun HistoryScreen(
     onClose: (Long, Double) -> Unit
 ) {
     LazyColumn {
-        if (trades.isEmpty()) {
+        if (trades.none { it.status == TradeStatus.CLOSED }) {
             item {
                 Text(
                     "Chưa có giao dịch nào được đóng.",
