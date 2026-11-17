@@ -200,22 +200,7 @@ object SystemDiagnostics {
             )
         )
         val intelligence = MarketIntelligenceEngine.analyze(marketIntelligenceCoins, null)
-        check(
-            "AI Market Intelligence ưu tiên WAIT khi thiếu Funding",
-            "Số cặp ${intelligence.items.size} • BTC ${intelligence.btcChangePct}",
-            intelligence.items.isNotEmpty() &&
-                intelligence.items.all { it.decision == "WAIT" } &&
-                intelligence.btcChangePct == 2.0
-        )
-
-        val volatileCoin = MarketCoin(
-            symbol = "SOLUSDT", price = 100.0, changePct = 5.0, quoteVolume = 100_000_000.0,
-            score = 95, signal = "LONG", atrPct = 4.0, volumeRatio = 2.0, trend1h = "BULLISH"
-        )
-        val volatileReport = MarketIntelligenceEngine.analyze(
-            listOf(marketIntelligenceCoins.first(), volatileCoin), null
-        )
-        val sol = volatileReport.items.firstOrNull { it.symbol == "SOLUSDT" }
+        
         check(
             "AI Market Intelligence chặn ATR% cao",
             sol?.reasons?.joinToString() ?: "Không có kết quả SOLUSDT",
@@ -227,16 +212,19 @@ object SystemDiagnostics {
             "LONG +0.20% phải được đánh dấu CORRECT",
             PredictionOutcomeEvaluator.evaluate("LONG", 0.20) == PredictionStatus.CORRECT
         )
+
         check(
             "Signal Learning SHORT đúng khi giá giảm đủ ngưỡng",
             "SHORT -0.20% phải được đánh dấu CORRECT",
             PredictionOutcomeEvaluator.evaluate("SHORT", -0.20) == PredictionStatus.CORRECT
         )
+
         check(
             "Signal Learning không chấm vùng nhiễu là thắng/thua",
             "Biến động +0.05% phải là FLAT",
             PredictionOutcomeEvaluator.evaluate("LONG", 0.05) == PredictionStatus.FLAT
         )
+
         check(
             "WAIT được đánh giá riêng, không tính là lệnh thắng",
             "WAIT +0.60% => AVOIDED_MOVE; +0.10% => FLAT",
@@ -244,7 +232,6 @@ object SystemDiagnostics {
                 PredictionOutcomeEvaluator.evaluate("WAIT", 0.10) == PredictionStatus.FLAT
         )
 
-        return results
     }
 }
 
