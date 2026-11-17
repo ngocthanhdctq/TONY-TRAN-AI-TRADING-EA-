@@ -73,7 +73,7 @@ class TradeNotificationManager(private val context: Context) {
                 .setContentText(lines.take(3).joinToString(" • "))
                 .setStyle(android.app.Notification.BigTextStyle().bigText(text))
                 .setAutoCancel(true)
-                .setCategory(android.app.Notification.CATEGORY_STATUS)
+                .setCategory(android.app.Notification.CATEGORY_ERROR)
                 .build()
         } else {
             @Suppress("DEPRECATION")
