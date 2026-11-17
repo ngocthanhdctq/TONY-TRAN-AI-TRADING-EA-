@@ -952,8 +952,8 @@ private fun TradeScreen(
         Text("USDⓈ-M FUTURES • Isolated • 10x", style = MaterialTheme.typography.titleMedium)
         OutlinedTextField(margin, onMargin, label = { Text("Margin Futures (USDT), mặc định 2") })
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected == Side.LONG, { onSide(Side.LONG) }, label = { Text("LONG") })
-            FilterChip(selected == Side.SHORT, { onSide(Side.SHORT) }, label = { Text("SHORT") })
+            FilterChip(side == Side.LONG, { onSide(Side.LONG) }, label = { Text("LONG") })
+FilterChip(side == Side.SHORT, { onSide(Side.SHORT) }, label = { Text("SHORT") })
         }
         Button(onClick = { onTrade("futures") }, enabled = coin != null, modifier = Modifier.fillMaxWidth()) {
             Text("MỞ FUTURES GIẢ LẬP")
