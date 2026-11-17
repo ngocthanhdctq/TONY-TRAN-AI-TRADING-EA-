@@ -1032,8 +1032,19 @@ private fun TradeScreen(
                                 MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                         )
                         val quantityText = java.text.DecimalFormat("0.##########").format(trade.quantity)
-                        Text("Khối lượng: $quantityText • Margin: %.4f USDT".format(java.util.Locale.US, trade.margin),
-                            style = MaterialTheme.typography.bodySmall)
+                        val positionNotional = trade.margin * trade.leverage
+                        Text("Khối lượng: $quantityText", style = MaterialTheme.typography.bodySmall)
+                        if (trade.market == MarketType.FUTURES) {
+                            Text(
+                                "Margin: %.4f USDT • Đòn bẩy: ${trade.leverage}x • Giá trị vị thế: %.4f USDT".format(
+                                    java.util.Locale.US, trade.margin, positionNotional
+                                ),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        } else {
+                            Text("Vốn Spot: %.4f USDT".format(java.util.Locale.US, trade.margin),
+                                style = MaterialTheme.typography.bodySmall)
+                        }
                         Button(
                             onClick = { currentPrice?.let { onClose(trade.id, it) } },
                             enabled = currentPrice != null,
@@ -1057,7 +1068,39 @@ private fun TradeScreen(
         }
         HorizontalDivider()
         Text("USDⓈ-M FUTURES • Isolated • 10x", style = MaterialTheme.typography.titleMedium)
-        OutlinedTextField(margin, onMargin, label = { Text("Margin Futures (USDT), mặc định 2") })
+        OutlinedTextField(
+            value = margin,
+            onValueChange = onMargin,
+            label = { Text("Margin Futures (USDT), mặc định 2") },
+            supportingText = { Text("Nhập tiền ký quỹ; đòn bẩy PAPER cố định 10x.") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        val enteredMargin = margin.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0.0 } ?: 0.0
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            shape = MaterialTheme.shapes.large
+        ) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Margin nhập vào", style = MaterialTheme.typography.bodyMedium)
+                    Text("%.4f USDT".format(java.util.Locale.US, enteredMargin), style = MaterialTheme.typography.titleSmall)
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Đòn bẩy", style = MaterialTheme.typography.bodyMedium)
+                    Text("10x", style = MaterialTheme.typography.titleSmall)
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.2f))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Giá trị vị thế ước tính", style = MaterialTheme.typography.titleSmall)
+                    Text("%.4f USDT".format(java.util.Locale.US, enteredMargin * 10.0),
+                        style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                }
+                Text("Giá trị vị thế = Margin × 10. Chưa tính phí giao dịch và funding.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+            }
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(side == Side.LONG, { onSide(Side.LONG) }, label = { Text("LONG") })
 FilterChip(side == Side.SHORT, { onSide(Side.SHORT) }, label = { Text("SHORT") })

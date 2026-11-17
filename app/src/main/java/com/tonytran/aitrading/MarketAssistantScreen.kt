@@ -1,5 +1,7 @@
 package com.tonytran.aitrading
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,12 +12,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import java.util.Locale
 
 private data class AssistantLine(val text: String, val fromUser: Boolean)
+
+private val AssistantAccent = Color(0xFFB995FF)
+private val AssistantPanel = Color(0xFF241B31)
+private val AssistantPanelSoft = Color(0xFF30243F)
 
 @Composable
 fun MarketAssistantScreen(
@@ -27,6 +35,7 @@ fun MarketAssistantScreen(
     var selected by remember { mutableStateOf("BTCUSDT") }
     var report by remember { mutableStateOf<AssistantMarketReport?>(null) }
     var busy by remember { mutableStateOf(false) }
+    var chatExpanded by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("Chọn mã và nhấn Phân tích đa khung thời gian để tải nến mới từ Binance.") }
     var lines by remember {
         mutableStateOf(listOf(AssistantLine(
@@ -42,6 +51,7 @@ fun MarketAssistantScreen(
         if (requested != null) selected = requested
         lines = lines + AssistantLine(prompt, true)
         question = ""
+        chatExpanded = true
         val symbol = requested ?: selected
         scope.launch {
             busy = true
@@ -110,23 +120,98 @@ fun MarketAssistantScreen(
                 }
             }
         }
-        LazyColumn(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(lines) { line ->
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = if (line.fromUser) Arrangement.End else Arrangement.Start) {
-                    Surface(modifier = Modifier.fillMaxWidth(if (line.fromUser) 0.88f else 1f),
-                        color = if (line.fromUser) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                        shape = RoundedCornerShape(14.dp)) {
-                        Text(line.text, Modifier.padding(12.dp), style = MaterialTheme.typography.bodyMedium)
+
+        // Collapsible chat panel: compact by default to keep the AI Center uncluttered.
+        Surface(
+            modifier = Modifier.fillMaxWidth().animateContentSize(),
+            color = AssistantPanel,
+            contentColor = Color.White,
+            shape = RoundedCornerShape(20.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, AssistantAccent.copy(alpha = 0.72f))
+        ) {
+            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Surface(color = Color(0xFF7652B5), shape = RoundedCornerShape(12.dp), modifier = Modifier.size(40.dp)) {
+                        Box(contentAlignment = Alignment.Center) { Text("✦", color = Color.White, style = MaterialTheme.typography.titleLarge) }
+                    }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        Text("TONY AI ASSISTANT", fontWeight = FontWeight.Bold, color = Color.White)
+                        Text(if (busy) "ĐANG PHÂN TÍCH..." else "ADVISORY MODE • PAPER ONLY",
+                            style = MaterialTheme.typography.labelSmall, color = AssistantAccent)
+                    }
+                    TextButton(onClick = { chatExpanded = !chatExpanded }) {
+                        Text(if (chatExpanded) "Thu gọn  ⌄" else "Mở chat  ⤢", color = AssistantAccent)
+                    }
+                }
+                if (chatExpanded) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf("BTCUSDT có nên BUY không?", "Phân tích ETHUSDT", "Tìm tín hiệu breakout").forEach { suggestion ->
+                            SuggestionChip(onClick = { submitQuestion(suggestion) }, label = {
+                                Text(suggestion, maxLines = 1, style = MaterialTheme.typography.labelSmall)
+                            })
+                        }
+                    }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 300.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(lines) { line ->
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = if (line.fromUser) Arrangement.End else Arrangement.Start) {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(if (line.fromUser) 0.88f else 1f),
+                                    color = if (line.fromUser) Color(0xFF5E4290) else AssistantPanelSoft,
+                                    shape = RoundedCornerShape(14.dp)
+                                ) {
+                                    Text(line.text, Modifier.padding(12.dp), style = MaterialTheme.typography.bodyMedium, color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = question,
+                            onValueChange = { question = it },
+                            modifier = Modifier.weight(1f),
+                            placeholder = { Text("✦  Nhập câu hỏi về thị trường...") },
+                            minLines = 1,
+                            maxLines = 3,
+                            shape = RoundedCornerShape(16.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = AssistantAccent,
+                                unfocusedBorderColor = AssistantAccent.copy(alpha = 0.55f),
+                                focusedContainerColor = Color(0xFF352744),
+                                unfocusedContainerColor = Color(0xFF30243F),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedPlaceholderColor = Color(0xFFD2C2EA),
+                                unfocusedPlaceholderColor = Color(0xFFD2C2EA)
+                            ),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                            keyboardActions = KeyboardActions(onSend = { if (question.isNotBlank() && !busy) submitQuestion(question.trim()) })
+                        )
+                        Button(
+                            onClick = { if (question.isNotBlank() && !busy) submitQuestion(question.trim()) },
+                            enabled = question.isNotBlank() && !busy,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7652B5), contentColor = Color.White),
+                            shape = RoundedCornerShape(14.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 16.dp)
+                        ) { Text("Gửi ↑", fontWeight = FontWeight.Bold) }
+                    }
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Surface(color = AssistantPanelSoft, shape = RoundedCornerShape(14.dp), modifier = Modifier.weight(1f)) {
+                            Text("${lines.size} tin nhắn • Chạm ‘Mở chat’ để hỏi TONY AI",
+                                Modifier.padding(horizontal = 12.dp, vertical = 13.dp), color = Color(0xFFE5D9F5),
+                                style = MaterialTheme.typography.bodySmall)
+                        }
+                        Button(
+                            onClick = { chatExpanded = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7652B5), contentColor = Color.White),
+                            shape = RoundedCornerShape(14.dp)
+                        ) { Text("Mở chat") }
                     }
                 }
             }
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(value = question, onValueChange = { question = it }, modifier = Modifier.weight(1f),
-                placeholder = { Text("Ví dụ: BTCUSDT có nên BUY không?") }, singleLine = false, maxLines = 3,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
-                keyboardActions = KeyboardActions(onSend = { if (question.isNotBlank() && !busy) submitQuestion(question.trim()) }))
-            Button(onClick = { if (question.isNotBlank() && !busy) submitQuestion(question.trim()) }, enabled = question.isNotBlank() && !busy) { Text("Gửi") }
         }
     }
 }
