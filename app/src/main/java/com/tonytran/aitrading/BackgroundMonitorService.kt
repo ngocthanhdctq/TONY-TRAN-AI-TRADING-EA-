@@ -142,7 +142,7 @@ class BackgroundMonitorService : Service() {
             .setContentText(message)
             .setStyle(Notification.BigTextStyle().bigText("$message\nGiá từ Binance Public API • PAPER TRADING"))
             .setAutoCancel(true)
-            .setCategory(Notification.CATEGORY_WARNING)
+            .setCategory(Notification.CATEGORY_ERROR)
             .build()
         val id = (key.hashCode() and 0x7fffffff)
         (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).notify(id, n)
