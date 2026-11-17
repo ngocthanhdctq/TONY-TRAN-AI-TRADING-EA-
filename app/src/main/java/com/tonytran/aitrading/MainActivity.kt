@@ -1029,9 +1029,6 @@ private fun HistoryScreen(
     }
 }
 
-        }
-    }
-}
 
 @Composable
 private fun SettingsScreen(
@@ -1297,8 +1294,8 @@ private fun NewsScreen(
                     }
                 }
             }
-        
-
+        }      
+    }
 
 @Composable
 private fun DecisionFusionScreen(
